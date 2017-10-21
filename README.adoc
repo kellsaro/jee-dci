@@ -1,0 +1,271 @@
+El patrón de diseño DCI
+=======================
+Maykell Sánchez Romero  [kellsaro@gmail.com]
+:asciidoctor:
+:compat-mode!:
+:description: Este artículo comenta la utilidad del patrón de diseño DCI.
+:doctype: article
+:experimental:
+:icons: font
+:idprefix: _id_sec_
+:imagesdir: assets/img
+:linkcss:
+:sectnums:
+:sectanchors:
+:sectlinks:
+:source-highlighter: coderay
+:stylesdir: assets/css
+//:toc: left
+//:toc-title: Contenido
+
+a**DCI** ha devenido en uno de los patrones que siempre tengo a mano para usar
+cuando programo. Complementario con **MVC** y no tan afamado como éste, he podido
+encontrar en su aplicación una forma estándar y simple de organizar los artefactos
+en la implementación de lógicas de negocio complejas.
+
+=== Patrón de diseño DCI
+**Datos, Contexto e Interacción**(https://en.wikipedia.org/wiki/Data,_context_and_interaction[DCI]) es un patrón de diseño utilizado en el
+desarrollo de sistemas complejos para aportar mecanismos simples, bien definidos, robustos y uniformes en la
+organización, implementación e invocación de la lógica de negocio.
+
+Entre sus objetivos están:
+
+* Simplificar la implementación de la lógica de negocio y sus dependencias de ejecución mediante la creación de contextos.
+* Estandarizar la implementación de la lógica de negocio mediante el uso de convenciones simples.
+* Facilitar el cambio de la lógica de negocio del sistema de manera ágil mediante el bajo acoplamiento del código.
+* Mejorar la comprensión del flujo del sistema mediante el otorgamiento de un __status__ de primera clase a la lógica de negocio.
+
+=== Explicación de DCI
+
+DCI conceptualiza la implementación de la lógica de negocio en tres partes:
+
+* **D**atos: son todos los datos necesarios para la implementación de la lógica de negocio.
+* **C**ontexto: es la agrupación de los datos y asignación de roles a los mismos.
+La asignación de roles se explica en que un dato puede ser interpretado en contextos diferentes
+de diferentes formas. Por ejemplo: suponiendo un sistema de gestión de salud, los datos de una persona pueden
+estar en rol de Paciente en un contexto de aplicación de un tratamiento médico, o en rol de Acompañante en el
+contexto de ciudados de otro paciente.
+El contexto define un dominio autocontenido y sensible a validación para la ejecución de la lógica de negocio.
+* **I**nteracción: es la implementación de la lógica de negocio. Para ello hace uso del contexto válido pues en él
+están todos los datos y roles suficientes.
+
+[ditaa]
+....
+    Datos                      Contexto                 Interacción
+
+  +--------+   Usado(s) en   +----------+  Usado en   +-------------+
+  | dato 1 +---------------->| rol 1    +------------>|             |
+  +--------+ +-------------->| rol 2    |             |  Lógica de  |
+             | +------------>|          |             |  Negocio    |
+  +--------+ | |             | rol N    |             |             |
+  | dato 2 +-+ |             +----------+             +-------------+
+  +--------+   |
+               |
+  +--------+   |
+  | dato N +---+
+  +--------+
+....
+
+DCI se puede ver como una aplicación del https://es.wikipedia.org/wiki/Principio_de_responsabilidad_%C3%BAnica[Principio de Responsabilidad Única]
+a la implementación de la lógica de negocio de un sistema.
+
+=== Un tín de historia
+
+DCI fue inventado por https://en.wikipedia.org/wiki/Trygve_Reenskaug[Trygve Reenskaug] y https://en.wikipedia.org/wiki/Jim_Coplien[James O. Coplien], científicos de la computación.
+Trygve Reenkaug también es el inventor del patrón de diseño https://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93controller[MVC].
+
+MVC y DCI son patrones complementarios, pues se centran en partes diferentes del funcionamiento de los sistemas.
+El dominio de aplicación de MVC comprende la interacción de los usuarios con la interfaz de la aplicación/sistema: información a mostrar, procesamiento de eventos
+de la interfaz de usuario, recepción y respuesta a peticiones, etc.
+
+El dominio de aplicación de DCI es la ejecución de la lógica de negocio, por lo cual MVC se puede apoyar en DCI para dar respuesta a la petición de un usuario.
+
+Es común ver la implementación de lógica de negocio en los **C**ontroladores del patrón MV**C**, lo cual es factible para operaciones
+triviales en sistemas no complejos con lógica de aplicación que raramente cambia.
+Pero cuando los sistemas comienzan a crecer, no aplicar DCI conlleva a una creciente complejidad de los controladores, mayor acoplamiento de
+código, mayor dificultad en la detección/corrección de errores y pérdida de agilidad para responder a los cambios en la lógica de negocio.
+
+=== Una posible implementación del patrón de diseño DCI para entornos Java EE
+
+Esta implementación consta de tres artefactos:
+
+* Interfaz **Contexto**: define el comportamiento de un contexto básicamente como una entidad sensibles a ser validada.
+Las clases que implementen esta interfaz deben adicionar los diferentes roles que serán utilizados en sus contextos específicos
+y dar una definición de cuándo es válido el contexto, a través de la implementación del método:
+
+[source, java]
+----
+public boolean esValido();
+----
+
+* Excepción **ContextoNoValido**: Es lanzada en la ejecución de una interacción si al invocar el método **esValido()** del contexto relacionado
+con la interacción se devuelve **__false__**.
+
+* Clase abstracta **InteraccionBasica**: define cómo se ejecuta cualquier lógica de negocio de una interacción a través del método **ejecutar()**
+que en ningún caso debe ser redefinido en clases hijas. El método no ha sido declarado como **__final__** pues no permitiría usar
+http://docs.oracle.com/javaee/6/tutorial/doc/giwhl.html[CDI] como vía de implementación de las interacciones.
+
+[source, java]
+----
+...
+public abstract class InteraccionBasica implements Serializable {
+
+	private static final long serialVersionUID = 1L;
+
+	public Object ejecutar() throws ContextoNoValido, Exception {
+
+		if (!getContexto().esValido()) throw new ContextoNoValido(getContexto().toString());
+
+		Object o = ejecucionDeLaLogicaDeNegocio();
+
+		return o;
+	}
+
+	protected abstract Object ejecucionDeLaLogicaDeNegocio();
+
+	public abstract Contexto getContexto();
+}
+----
+
+Adicionalmente cualquier clase Interaccion que extienda de **InteraccionBasica** debe proveer implementaciones concretas para los métodos **ejecucionDeLaLogicaDeNegocio**
+y **getContexto**. En el método **ejecucionDeLaLogicaDeNegocio** es donde deben centrarse los esfuerzos del desarrollador por brindar una implementación adecuada
+de la misma.
+
+=== Uso
+A continuación se considera el caso de uso de búsqueda de una persona dado su id.
+
+[source, java]
+----
+...
+public class ContextoBusquedaDePersonaPorId implements Contexto, Serializable { // <1>
+
+  private static final long serialVersionUID = 1L;
+
+  private EntityManager em; // <2>
+
+  private BigDecimal id; // <2>
+
+  @Override public boolean esValido() { return getEm() != null && getId() != null; } // <3>
+  // getters y setters no incluidos
+}
+----
+<1> El contexto **ContextoBusquedaDePersonaPorId** implementa las interfaces **Contexto** y **Serializable**.
+<2> Se definen los datos y roles que necesita el contexto, ej: em es un EntityManager que referencia a una fuente de Datos.
+<3> Se brinda una implementación del método **esValido** acorde al contexto. En este caso el contexto es válido cuando los campos
+**id** y **em** no son null.
+
+. La interacción **InteraccionBusquedaDePersonaPorId**:
+
+[source, java]
+----
+...
+@Model // <1>
+public class InteraccionBusquedaDePersonaPorId extends InteraccionBasica { // <2>
+
+  private static final long serialVersionUID = 4591028478174556531L;
+
+  private final ContextoBusquedaDePersonaPorId contexto = new ContextoBusquedaDePersonaPorId(); // <3>
+
+  @Override
+  public Contexto getContexto() { return contexto; } // <4>
+
+  @Override
+  protected Object ejecucionDeLaLogicaDeNegocio() {  // <5>
+
+    // Implementación de la lógica de negocio
+
+    return _resultado;
+  }
+}
+----
+<1> La anotación http://docs.oracle.com/javaee/6/tutorial/doc/gkhqc.html[**@Model**] indica que estamos en presencia de un CDI __bean__ el cual podrá ser inyectado
+como dependencia utilizando el nombre **interaccionBusquedaDePersonaPorId**. La dependencia tiene un
+ámbito de **Request**.
+<2> La interacción extiende la clase InteraccionBasica.
+<3> Se declara e instancia el contexto asociado a la interacción. Con la instanciación se asegura que no es nulo, evitando chequeos innecesarios.
+<4> Se define el método **getContexto**.
+<5> Se define el método **ejecucionDeLaLogicaDeNegocio** donde se implementa la lógica de negocio en concreto.
+
+El uso del contexto y la interacción se hace a través de un **EJB** que brinda un contexto de ejecución transaccional a la lógica de negocio
+así como un punto de entrada estandar para su uso.
+
+La interfaz del EJB define el comportamiento del mismo. Como pauta se debe definir un método **ejecutar** con una cantidad de parámetros
+que dependa del caso de uso. Estos parámetros son los **datos** utilizados en el contexto.
+El primer parámetro debe ser un objeto de tipo **LogAuditoria**.
+
+[source, java]
+----
+...
+public interface ServIntBusquedaDePersonaPorId {
+
+	public Object ejecutar(BigDecimal id) throws ContextoNoValido, OptimisticLockException, Exception; // <1>
+}
+----
+<1> Declaración del método con las excepciones que puede lanzar.
+
+Implementación de la interfaz:
+[source, java]
+----
+...
+@Stateless // <1>
+public class ServImpBusquedaDePersonaPorId implements ServIntBusquedaDePersonaPorId, Serializable{
+
+  private static final long serialVersionUID = 1L;
+
+  @PersistenceContext
+  transient private EntityManager em; // <2>
+
+  @Inject
+  transient private InteraccionBusquedaDePersonaPorId interaccion; // <3>
+
+  @Override
+  public Object ejecutar(BigDecimal id) throws ContextoNoValido, OptimisticLockException, Exception {
+
+    // <4>
+    ContextoBusquedaDePersonaPorId ctx = (ContextoBusquedaDePersonaPorId)interaccion.getContexto();
+
+    ctx.setEm(em);
+    ctx.setId(id);
+
+    return interaccion.ejecutar();
+  }
+}
+----
+<1> Decora la clase como definición de objetos EJBs sin estado.
+<2> Se inyecta el recurso **EntityManager** que va a ser utilizado en el contexto.
+<3> Se inyecta el CDI __bean__ de la interacción.
+<4> Una implementación estándar: se setean los datos relevantes al contexto y se devuelve el resultado de la ejecución de la interacción.
+
+Una vez implementados los artefactos, se puede utilizar el servicio en el controlador CDI __bean__ inyectando el EJB e invocando el método **ejecutar**:
+
+[source, java]
+----
+...
+@Named
+public class PersonaDatos implements Serializable {
+  ...
+  @EJB
+  transient private ServIntBusquedaDePersonaPorId busquedaDePersonaPorId; // <1>
+
+  public void buscar(BigDecimal id) {
+
+    if (id != null) {
+      try {
+        Persona _p = (Persona) busquedaDePersonaPorId.ejecutar(id); // <2>
+      } catch (Exception _e) {_e.printStackTrace();}
+    }
+  }
+  ...
+}
+----
+<1> Inyección del EJB.
+<2> Invocación del método **ejecutar**.
+
+=== Palabras finales
+La utilización del patrón de diseño DCI me ha facilitado la programación de lógica
+de negocio compleja y ha hecho mi código más fácil de comprender por otras personas.
+Como siempre ocurre, no es una __bala de plata__, su aplicación en casos de lógica
+simple no es necesaria pues al menos hay que implementar
+un contexto y una interacción por cada caso de uso.
+
+Si has tenido experiencias haciendo uso del patrón y quisieras compartirlas quedo atento :)
