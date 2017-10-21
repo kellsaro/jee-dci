@@ -18,7 +18,7 @@ Maykell Sánchez Romero  [kellsaro@gmail.com]
 //:toc: left
 //:toc-title: Contenido
 
-a**DCI** ha devenido en uno de los patrones que siempre tengo a mano para usar
+**DCI** ha devenido en uno de los patrones que siempre tengo a mano para usar
 cuando programo. Complementario con **MVC** y no tan afamado como éste, he podido
 encontrar en su aplicación una forma estándar y simple de organizar los artefactos
 en la implementación de lógicas de negocio complejas.
