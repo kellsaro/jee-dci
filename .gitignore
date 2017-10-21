@@ -1,0 +1,39 @@
+# Add any directories, files, or patterns you don't want to be tracked by version control
+
+# general
+*~
+*.log
+tmp
+dump
+
+# eclipse
+.settings
+.cache
+.project
+.classpath
+.scala_dependencies
+.tern-project
+bin
+.~*
+
+# sbt
+dist
+project/boot
+project/target
+project/plugins/target
+logs
+*project/project
+project/target
+*target
+.target
+
+dist
+
+# experimental
+*.g8
+
+
+# play
+logs
+RUNNING_PID
+modules/target
