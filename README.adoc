@@ -154,7 +154,8 @@ public class ContextoBusquedaDePersonaPorId implements Contexto, Serializable { 
 <3> Se brinda una implementación del método **esValido** acorde al contexto. En este caso el contexto es válido cuando los campos
 **id** y **em** no son null.
 
-. La interacción **InteraccionBusquedaDePersonaPorId**:
+
+La interacción **InteraccionBusquedaDePersonaPorId**:
 
 [source, java]
 ----
@@ -189,9 +190,7 @@ como dependencia utilizando el nombre **interaccionBusquedaDePersonaPorId**. La 
 El uso del contexto y la interacción se hace a través de un **EJB** que brinda un contexto de ejecución transaccional a la lógica de negocio
 así como un punto de entrada estandar para su uso.
 
-La interfaz del EJB define el comportamiento del mismo. Como pauta se debe definir un método **ejecutar** con una cantidad de parámetros
-que dependa del caso de uso. Estos parámetros son los **datos** utilizados en el contexto.
-El primer parámetro debe ser un objeto de tipo **LogAuditoria**.
+La interfaz del EJB define el comportamiento del mismo. Como pauta se debe definir un método **ejecutar** con parámetros en dependencia del caso de uso. Estos parámetros son los **datos** utilizados en el contexto.
 
 [source, java]
 ----
